@@ -12,12 +12,7 @@ namespace ContosoUniversity.Controllers
         {
             return View();
         }
-
-        public ActionResult Display()
-        {
-            return View(db.Students.ToList());
-        }
-
+         
         public ActionResult About()
         {
             ViewBag.Message = "Your application description page.";
