@@ -27,5 +27,6 @@ namespace ContosoUniversity.Models
 
         [RegularExpression(@"^(\+\s?)?((?<!\+.*)\(\+?\d+([\s\-\.]?\d+)?\)|\d+)([\s\-\.]?(\(\d+([\s\-\.]?\d+)?\)|\d+))*(\s?(x|ext\.?)\s?\d+)?$", ErrorMessage = "The Phone field is not a valid phone number")]
         public string Phone { get; set; }
+        
     }
 }
