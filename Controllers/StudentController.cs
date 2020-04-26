@@ -9,6 +9,8 @@ using System.Web.Mvc;
 using ContosoUniversity.DAL;
 using ContosoUniversity.Models;
 using PagedList;
+using System.Data.Entity.Infrastructure;
+
 namespace ContosoUniversity.Controllers
 {
     public class StudentController : Controller
@@ -63,7 +65,7 @@ namespace ContosoUniversity.Controllers
             return View(db.Students.ToList());
         }
         [HttpPost]
-[ValidateAntiForgeryToken]
+        [ValidateAntiForgeryToken]
         public ActionResult EditDisplay([Bind(Include = "ID,LastName,FirstMidName,EnrollmentDate")] Student student)
         {
             if (ModelState.IsValid)
@@ -118,13 +120,19 @@ namespace ContosoUniversity.Controllers
         [ValidateAntiForgeryToken]
         public ActionResult Create([Bind(Include = "ID,LastName,FirstMidName,EnrollmentDate")] Student student)
         {
-            if (ModelState.IsValid)
+            try
             {
-                db.Students.Add(student);
-                db.SaveChanges();
-                return RedirectToAction("Index");
+                if (ModelState.IsValid)
+                {
+                    db.Students.Add(student);
+                    db.SaveChanges();
+                    return RedirectToAction("Index");
+                }
             }
-
+            catch (RetryLimitExceededException)
+            {
+                ModelState.AddModelError("","Unable to save changes. try again, and if the problem persists see your systems administrator.");
+            }
             return View(student);
         }
 
@@ -150,21 +158,33 @@ namespace ContosoUniversity.Controllers
         [ValidateAntiForgeryToken]
         public ActionResult Edit([Bind(Include = "ID,LastName,FirstMidName,EnrollmentDate")] Student student)
         {
-            if (ModelState.IsValid)
+            try
             {
-                db.Entry(student).State = EntityState.Modified;
-                db.SaveChanges();
-                return RedirectToAction("Index");
+                if (ModelState.IsValid)
+                {
+                    db.Entry(student).State = EntityState.Modified;
+                    db.SaveChanges();
+                    return RedirectToAction("Index");
+                }
+            }
+            catch (RetryLimitExceededException)
+            {
+                ModelState.AddModelError("","Unable to save changes. If the problem persists see your systems administrator.");
             }
             return View(student);
         }
 
         // GET: Student/Delete/5
-        public ActionResult Delete(int? id)
+        public ActionResult Delete(int? id, bool? saveChangesError = false)
         {
+
             if (id == null)
             {
                 return new HttpStatusCodeResult(HttpStatusCode.BadRequest);
+            }
+            if (saveChangesError.GetValueOrDefault())
+            {
+                ViewBag.ErrorMessage = "Delete failed. try again, and if the problem persists see your systems administrator.";
             }
             Student student = db.Students.Find(id);
             if (student == null)
@@ -172,6 +192,7 @@ namespace ContosoUniversity.Controllers
                 return HttpNotFound();
             }
             return View(student);
+
         }
 
         // POST: Student/Delete/5
@@ -179,10 +200,17 @@ namespace ContosoUniversity.Controllers
         [ValidateAntiForgeryToken]
         public ActionResult DeleteConfirmed(int id)
         {
-            Student student = db.Students.Find(id);
-            db.Students.Remove(student);
-            db.SaveChanges();
-            return RedirectToAction("Index");
+            try
+            {
+                Student student = db.Students.Find(id);
+                db.Students.Remove(student);
+                db.SaveChanges();
+                return RedirectToAction("Index");
+            }
+            catch (RetryLimitExceededException)
+            {
+                return RedirectToAction("Delete", new { id = id, saveChangesError = true});
+            }
         }
 
         protected override void Dispose(bool disposing)
